@@ -61,6 +61,7 @@ need_tag_as_latest=$(jq -r '.params.tag_as_latest // "false"' < $payload)
 build_args=$(jq -r '.params.build_args // {}' < $payload)
 build_args_file=$(jq -r '.params.build_args_file // ""' < $payload)
 
+alias_tags=($(jq -r '.params.alias_tags // [] | join(" ")' < $payload))
 
 tag_name=""
 if [ -n "$tag_params" ]; then
@@ -209,6 +210,13 @@ if [ "$need_tag_as_latest" = "true" ] && [ "${tag_name}" != "latest"  ]; then
   docker push "${repository}:latest"
   echo "${repository}:${tag_name} tagged as latest"
 fi
+
+for tag in ${alias_tags[*]}; do
+  docker tag "${repository}:${tag_name}" "${repository}:${tag}"
+  docker push "${repository}:${tag}"
+  echo "${repository}:${tag_name} tagged as ${tag}"
+done
+
 
 jq -n "{
   version: {
